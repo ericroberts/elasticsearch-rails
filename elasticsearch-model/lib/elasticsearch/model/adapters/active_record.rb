@@ -36,7 +36,8 @@ module Elasticsearch
           # Returns an `ActiveRecord::Relation` instance
           #
           def records
-            sql_records = klass.where(klass.primary_key => ids)
+            ids_from_elasticsearch = ids
+            sql_records = klass.all
             sql_records = sql_records.includes(self.options[:includes]) if self.options[:includes]
 
             # Re-order records based on the order from Elasticsearch hits
@@ -47,15 +48,16 @@ module Elasticsearch
               ar_records_method_name = :records if defined?(::ActiveRecord) && ::ActiveRecord::VERSION::MAJOR >= 5
 
               define_singleton_method(ar_records_method_name) do
+                records = where(klass.primary_key => ids_from_elasticsearch[offset_value.to_i, (limit_value || ids.length)]).limit(nil).offset(nil)
                 if defined?(::ActiveRecord) && ::ActiveRecord::VERSION::MAJOR >= 4
-                  self.load
+                  records.load
                 else
-                  self.__send__(:exec_queries)
+                  records.__send__(:exec_queries)
                 end
-                if !self.order_values.present?
-                  @records.sort_by { |record| hits.index { |hit| hit['_id'].to_s == record.id.to_s } }
+                if !order_values.present?
+                  records.instance_variable_get(:@records).sort_by { |record| hits.index { |hit| hit['_id'].to_s == record.id.to_s } }
                 else
-                  @records
+                  records.instance_variable_get(:@records)
                 end
               end if self
             end
