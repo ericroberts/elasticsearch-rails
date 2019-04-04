@@ -48,7 +48,7 @@ module Elasticsearch
               ar_records_method_name = :records if defined?(::ActiveRecord) && ::ActiveRecord::VERSION::MAJOR >= 5
 
               define_singleton_method(ar_records_method_name) do
-                records = where(klass.primary_key => ids_from_elasticsearch[offset_value.to_i, (limit_value || ids.length)]).limit(nil).offset(nil)
+                records = where(klass.primary_key => ids_from_elasticsearch[offset_value.to_i, (limit_value || ids.length)]).limit(nil).offset(0)
                 if defined?(::ActiveRecord) && ::ActiveRecord::VERSION::MAJOR >= 4
                   records.load
                 else
